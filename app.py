@@ -1,10 +1,10 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from data_models import db, Author, Book
 from datetime import datetime
 from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
 import os
-
 
 app = Flask(__name__)
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -12,13 +12,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'd
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
-
-from sqlalchemy import or_
-
 @app.route('/')
 def home():
     sort_by = request.args.get('sort_by', 'title')
     search = request.args.get('search', '').strip()
+    message = request.args.get('message')
 
     query = Book.query.join(Author)
 
@@ -38,10 +36,7 @@ def home():
 
     books = query.all()
 
-    return render_template('home.html', books=books, sort_by=sort_by)
-
-
-
+    return render_template('home.html', books=books, sort_by=sort_by, message=message)
 
 @app.route('/add_author', methods=['GET', 'POST'])
 def add_author():
@@ -60,7 +55,6 @@ def add_author():
         message = f"Author '{name}' was successfully added."
 
     return render_template("add_author.html", message=message)
-
 
 @app.route('/add_book', methods=['GET', 'POST'])
 def add_book():
@@ -88,6 +82,36 @@ def add_book():
 
     return render_template("add_book.html", authors=authors, message=message)
 
+@app.route('/book/<int:book_id>/delete', methods=['POST'])
+def delete_book(book_id):
+    book = Book.query.options(joinedload(Book.author)).get_or_404(book_id)
+    author = book.author
+
+    db.session.delete(book)
+    db.session.commit()
+
+    remaining_books = Book.query.filter_by(author_id=author.id).count()
+
+    if remaining_books == 0:
+        return redirect(url_for('confirm_author_deletion', author_id=author.id, message="book_deleted"))
+    return redirect(url_for('home', message='book_deleted'))
+
+@app.route('/author/<int:author_id>/delete', methods=['POST'])
+def delete_author(author_id):
+    author = Author.query.get_or_404(author_id)
+
+    if Book.query.filter_by(author_id=author.id).count() == 0:
+        db.session.delete(author)
+        db.session.commit()
+        return redirect(url_for('home', message="author_deleted"))
+    else:
+        return redirect(url_for('home', message="author_not_deleted"))
+
+@app.route('/author/<int:author_id>/confirm_delete')
+def confirm_author_deletion(author_id):
+    author = Author.query.get_or_404(author_id)
+    message = request.args.get("message")
+    return render_template('confirm_author_delete.html', author=author, message=message)
 
 if __name__ == '__main__':
     with app.app_context():

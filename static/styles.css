@@ -37,3 +37,30 @@ select {
   font-size: 1rem;
   margin-right: 10px;
 }
+
+form button[type="submit"] {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  background-color: #cc0000;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+form button[type="submit"]:hover {
+  background-color: #990000;
+}
+
+.success-message {
+  color: green;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.warning-message {
+  color: darkorange;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
