@@ -2,6 +2,7 @@ from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from data_models import db, Author, Book
 from datetime import datetime
+from sqlalchemy import or_
 import os
 
 
@@ -12,16 +13,33 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 
+from sqlalchemy import or_
+
 @app.route('/')
 def home():
-    sort_by = request.args.get('sort_by', 'title')  # Standard: nach Titel sortieren
+    sort_by = request.args.get('sort_by', 'title')
+    search = request.args.get('search', '').strip()
+
+    query = Book.query.join(Author)
+
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            or_(
+                Book.title.ilike(search_pattern),
+                Author.name.ilike(search_pattern)
+            )
+        )
 
     if sort_by == 'author':
-        books = Book.query.join(Author).order_by(Author.name).all()
+        query = query.order_by(Author.name)
     else:
-        books = Book.query.order_by(Book.title).all()
+        query = query.order_by(Book.title)
+
+    books = query.all()
 
     return render_template('home.html', books=books, sort_by=sort_by)
+
 
 
 
