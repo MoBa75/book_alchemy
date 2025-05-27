@@ -14,8 +14,15 @@ db.init_app(app)
 
 @app.route('/')
 def home():
-    books = Book.query.all()
-    return render_template('home.html', books=books)
+    sort_by = request.args.get('sort_by', 'title')  # Standard: nach Titel sortieren
+
+    if sort_by == 'author':
+        books = Book.query.join(Author).order_by(Author.name).all()
+    else:
+        books = Book.query.order_by(Book.title).all()
+
+    return render_template('home.html', books=books, sort_by=sort_by)
+
 
 
 @app.route('/add_author', methods=['GET', 'POST'])

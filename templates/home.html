@@ -5,23 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Library Home</title>
-    <style>
-      .book {
-        display: flex;
-        align-items: center;
-        margin-bottom: 20px;
-      }
-      .book img {
-        width: 100px;
-        height: auto;
-        margin-right: 20px;
-      }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   </head>
   <body>
-
     <h1>Library Catalog</h1>
-
+    <form method="get" action="/">
+      <label for="sort_by">Sort books by:</label>
+      <select name="sort_by" id="sort_by">
+        <option value="title" {% if sort_by == 'title' %}selected{% endif %}>Title</option>
+        <option value="author" {% if sort_by == 'author' %}selected{% endif %}>Author</option>
+      </select>
+      <input type="submit" value="Sort">
+    </form>
+    <br>
     {% for book in books %}
       <div class="book">
         <img src="https://covers.openlibrary.org/b/isbn/{{ book.isbn }}-M.jpg" alt="No cover available">
@@ -32,6 +28,5 @@
         </div>
       </div>
     {% endfor %}
-
   </body>
 </html>
