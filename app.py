@@ -11,6 +11,13 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'd
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
+
+@app.route('/')
+def home():
+    books = Book.query.all()
+    return render_template('home.html', books=books)
+
+
 @app.route('/add_author', methods=['GET', 'POST'])
 def add_author():
     message = ""
@@ -28,6 +35,7 @@ def add_author():
         message = f"Author '{name}' was successfully added."
 
     return render_template("add_author.html", message=message)
+
 
 @app.route('/add_book', methods=['GET', 'POST'])
 def add_book():

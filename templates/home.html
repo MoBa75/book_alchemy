@@ -4,12 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Library Home</title>
+    <style>
+      .book {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .book img {
+        width: 100px;
+        height: auto;
+        margin-right: 20px;
+      }
+    </style>
   </head>
   <body>
 
+    <h1>Library Catalog</h1>
+
     {% for book in books %}
-    <div> <h3>{{ book.title }}</h3>
-    </div>
+      <div class="book">
+        <img src="https://covers.openlibrary.org/b/isbn/{{ book.isbn }}-M.jpg" alt="No cover available">
+        <div>
+          <h3>{{ book.title }}</h3>
+          <p><em>by {{ book.author.name }}</em></p>
+          <p>Published: {{ book.publication_year }}</p>
+        </div>
+      </div>
     {% endfor %}
 
   </body>
