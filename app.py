@@ -5,12 +5,18 @@ from datetime import datetime
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 import os
+from db_validation import validate_database
+
 
 app = Flask(__name__)
+
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'data', 'library.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db.init_app(app)
+
+validate_database(app)
 
 @app.route('/')
 def home():
@@ -114,6 +120,4 @@ def confirm_author_deletion(author_id):
     return render_template('confirm_author_delete.html', author=author, message=message)
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
