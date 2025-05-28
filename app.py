@@ -62,22 +62,22 @@ def add_author():
     message = ""
     if request.method == 'POST':
         name = request.form.get('name')
-        birthdate_str = request.form.get('birthdate')
-        deathdate_str = request.form.get('date_of_death')
+        birthdate = request.form.get('birthdate')
+        death_date = request.form.get('date_of_death')
 
         if not name:
             return jsonify({'error': 'Name is required.'}), 400
-        if not birthdate_str:
+        if not birthdate:
             return jsonify({'error': 'Birthdate (yyyy-mm-dd) is required.'}), 400
 
         try:
-            birthdate = datetime.strptime(birthdate_str, "%Y-%m-%d").date()
+            birthdate = datetime.strptime(birthdate, "%Y-%m-%d").date()
         except ValueError:
             return jsonify({'error': 'Birthdate needs to have the format yyyy-mm-dd.'}), 400
 
-        if deathdate_str:
+        if death_date:
             try:
-                deathdate = datetime.strptime(deathdate_str, "%Y-%m-%d").date()
+                death_date = datetime.strptime(death_date, "%Y-%m-%d").date()
             except ValueError:
                 return jsonify({'error': 'Date of death needs to have the format yyyy-mm-dd.'}), 400
 
@@ -85,7 +85,7 @@ def add_author():
             new_author = Author(
                     name=name,
                     birth_date=birthdate,
-                    date_of_death=deathdate)
+                    date_of_death=death_date)
             message = add_element(new_author)
             if not message:
                 message = f"Author '{name}' was successfully added."
