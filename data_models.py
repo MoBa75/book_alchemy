@@ -18,10 +18,10 @@ class Author(db.Model):
         return f"<Author(id={self.id}, name='{self.name}')>"
 
     def __str__(self):
-        birth = self.birth_date.year if self.birth_date else ""
+        birth = self.birth_date.year
         death = self.date_of_death.year if self.date_of_death else ""
         lifespan = f"{birth}–{death}" if death else f"{birth}"
-        return f"{self.name} ({lifespan})" if lifespan else self.name
+        return f"{self.name} ({lifespan})"
 
 
 class Book(db.Model):
@@ -31,6 +31,7 @@ class Book(db.Model):
     isbn = db.Column(db.String(13), unique=True, nullable=False)
     title = db.Column(db.String(200), nullable=False)
     publication_year = db.Column(db.Integer, nullable=True)
+    book_cover_url = db.Column(db.String(200), nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('authors.id'), nullable=False)
 
     def __repr__(self):
@@ -38,4 +39,3 @@ class Book(db.Model):
 
     def __str__(self):
         return f"{self.title} ({self.publication_year}) by {self.author.name}"
-
