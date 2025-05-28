@@ -16,7 +16,7 @@ def validate_database(app):
         expected_tables = {
                             'authors': {'id', 'name', 'birth_date', 'date_of_death'},
                             'books': {'id', 'isbn', 'title', 'publication_year',
-                                      'book_cover_url', 'authors_id'}
+                                      'book_cover_url', 'author_id'}
                             }
         actual_tables = set(inspector.get_table_names())
         missing_tables = set(expected_tables.keys()) - actual_tables

@@ -80,6 +80,8 @@ def add_author():
                 death_date = datetime.strptime(death_date, "%Y-%m-%d").date()
             except ValueError:
                 return jsonify({'error': 'Date of death needs to have the format yyyy-mm-dd.'}), 400
+        else:
+            death_date = None
 
         try:
             new_author = Author(
@@ -120,7 +122,7 @@ def add_book():
                 book_cover_url=get_cover_by_isbn(isbn),
                 author_id=int(author_id))
             message = add_element(new_book)
-            if message:
+            if not message:
                 message = f"Book '{title}' was successfully added."
         except ValueError:
             return jsonify({"error": "Invalid data type provided. "
