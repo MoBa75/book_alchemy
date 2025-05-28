@@ -1,11 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from data_models import db, Author, Book
 from datetime import datetime
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 import os
 from db_validation import validate_database
+from services.get_bookcover import get_cover_by_isbn
+from sqlalchemy.exc import SQLAlchemyError
 
 
 app = Flask(__name__)
@@ -18,6 +19,20 @@ db.init_app(app)
 
 validate_database(app)
 
+
+def add_element(element):
+    try:
+        db.session.add(element)
+        db.session.commit()
+        return ""
+    except SQLAlchemyError as error:
+        db.session.rollback()
+        return f"Database error: {str(error)}"
+    except Exception as error:
+        db.session.rollback()
+        return f"An unexpected error occurred: {str(error)}"
+
+
 @app.route('/')
 def home():
     sort_by = request.args.get('sort_by', 'title')
@@ -28,12 +43,8 @@ def home():
 
     if search:
         search_pattern = f"%{search}%"
-        query = query.filter(
-            or_(
-                Book.title.ilike(search_pattern),
-                Author.name.ilike(search_pattern)
-            )
-        )
+        query = query.filter(or_(Book.title.ilike(search_pattern),
+                                 Author.name.ilike(search_pattern)))
 
     if sort_by == 'author':
         query = query.order_by(Author.name)
@@ -42,7 +53,9 @@ def home():
 
     books = query.all()
 
-    return render_template('home.html', books=books, sort_by=sort_by, message=message)
+    return render_template('home.html', books=books,
+                           sort_by=sort_by, message=message)
+
 
 @app.route('/add_author', methods=['GET', 'POST'])
 def add_author():
@@ -52,15 +65,35 @@ def add_author():
         birthdate_str = request.form.get('birthdate')
         deathdate_str = request.form.get('date_of_death')
 
-        birthdate = datetime.strptime(birthdate_str, "%Y-%m-%d").date() if birthdate_str else None
-        deathdate = datetime.strptime(deathdate_str, "%Y-%m-%d").date() if deathdate_str else None
+        if not name:
+            return jsonify({'error': 'Name is required.'}), 400
+        if not birthdate_str:
+            return jsonify({'error': 'Birthdate (yyyy-mm-dd) is required.'}), 400
 
-        new_author = Author(name=name, birth_date=birthdate, date_of_death=deathdate)
-        db.session.add(new_author)
-        db.session.commit()
-        message = f"Author '{name}' was successfully added."
+        try:
+            birthdate = datetime.strptime(birthdate_str, "%Y-%m-%d").date()
+        except ValueError:
+            return jsonify({'error': 'Birthdate needs to have the format yyyy-mm-dd.'}), 400
 
+        if deathdate_str:
+            try:
+                deathdate = datetime.strptime(deathdate_str, "%Y-%m-%d").date()
+            except ValueError:
+                return jsonify({'error': 'Date of death needs to have the format yyyy-mm-dd.'}), 400
+
+        try:
+            new_author = Author(
+                    name=name,
+                    birth_date=birthdate,
+                    date_of_death=deathdate)
+            message = add_element(new_author)
+            if not message:
+                message = f"Author '{name}' was successfully added."
+        except ValueError:
+            return jsonify({"error": "Invalid data type provided. "
+                                    "Please check birthdate and date of death."}), 400
     return render_template("add_author.html", message=message)
+
 
 @app.route('/add_book', methods=['GET', 'POST'])
 def add_book():
@@ -73,51 +106,92 @@ def add_book():
         publication_year = request.form.get('publication_year')
         author_id = request.form.get('author_id')
 
-        if not (title and isbn and publication_year and author_id):
-            message = "Please fill in all fields."
-        else:
+        missing_fields = [variable for variable
+                          in ['title', 'isbn', 'publication_year', 'author_id']
+                          if not locals()[variable]]
+        if missing_fields:
+            jsonify({'error': f'Fields missing: {", ".join(missing_fields)}'}), 400
+
+        try:
             new_book = Book(
                 title=title,
                 isbn=isbn,
                 publication_year=int(publication_year),
-                author_id=int(author_id)
-            )
-            db.session.add(new_book)
-            db.session.commit()
-            message = f"Book '{title}' was successfully added."
+                book_cover_url=get_cover_by_isbn(isbn),
+                author_id=int(author_id))
+            message = add_element(new_book)
+            if message:
+                message = f"Book '{title}' was successfully added."
+        except ValueError:
+            return jsonify({"error": "Invalid data type provided. "
+                                    "Please check the year and author ID."}), 400
 
     return render_template("add_book.html", authors=authors, message=message)
 
+
 @app.route('/book/<int:book_id>/delete', methods=['POST'])
 def delete_book(book_id):
-    book = Book.query.options(joinedload(Book.author)).get_or_404(book_id)
-    author = book.author
+    try:
+        book = Book.query.options(joinedload(Book.author)).get_or_404(book_id)
+        author = book.author
 
-    db.session.delete(book)
-    db.session.commit()
+        db.session.delete(book)
+        db.session.commit()
 
-    remaining_books = Book.query.filter_by(author_id=author.id).count()
+        remaining_books = Book.query.filter_by(author_id=author.id).count()
 
-    if remaining_books == 0:
-        return redirect(url_for('confirm_author_deletion', author_id=author.id, message="book_deleted"))
-    return redirect(url_for('home', message='book_deleted'))
+        if remaining_books == 0:
+            return redirect(url_for('confirm_author_deletion',
+                                    author_id=author.id, message="book_deleted"))
+        message = 'Book deleted successfully'
+
+    except SQLAlchemyError as error:
+        db.session.rollback()
+        message = f'Database error: {error}'
+
+    except Exception as error:
+        db.session.rollback()
+        message = f'Unexpected error: {error}'
+    return redirect(url_for('home', message=message))
+
 
 @app.route('/author/<int:author_id>/delete', methods=['POST'])
 def delete_author(author_id):
-    author = Author.query.get_or_404(author_id)
+    try:
+        author = Author.query.get_or_404(author_id)
 
-    if Book.query.filter_by(author_id=author.id).count() == 0:
-        db.session.delete(author)
-        db.session.commit()
-        return redirect(url_for('home', message="author_deleted"))
-    else:
-        return redirect(url_for('home', message="author_not_deleted"))
+        if Book.query.filter_by(author_id=author.id).count() == 0:
+            db.session.delete(author)
+            db.session.commit()
+            message = "Author deleted successfully"
+        else:
+            message = "Author not deleted"
+    except SQLAlchemyError as error:
+        db.session.rollback()
+        message = f'Database error: {error}'
+
+    except Exception as error:
+        db.session.rollback()
+        message = f'Unexpected error: {error}'
+    return redirect(url_for('home', message=message))
+
 
 @app.route('/author/<int:author_id>/confirm_delete')
 def confirm_author_deletion(author_id):
-    author = Author.query.get_or_404(author_id)
-    message = request.args.get("message")
-    return render_template('confirm_author_delete.html', author=author, message=message)
+    try:
+        author = Author.query.get_or_404(author_id)
+        message = request.args.get("message")
+        return render_template('confirm_author_delete.html',
+                               author=author, message=message)
+    except SQLAlchemyError as error:
+        db.session.rollback()
+        message = f'Database error: {error}'
+
+    except Exception as error:
+        db.session.rollback()
+        message = f'Unexpected error: {error}'
+    return redirect(url_for('home', message=message))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
