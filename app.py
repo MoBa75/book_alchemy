@@ -87,7 +87,8 @@ def add_author():
             check_author = Author.query.filter(
                             func.lower(Author.name) == name.strip().lower()).first()
             if check_author:
-                return jsonify({'error': 'Author already exists'}), 409
+                return render_template('add_author.html',
+                                       message='Author already exists')
             new_author = Author(
                     name=name,
                     birth_date=birthdate,
@@ -124,7 +125,8 @@ def add_book():
             check_book = Book.query.filter(func.lower(Book.title) == title.strip().lower(),
                                            Book.author_id == author_id).first()
             if check_book:
-                return jsonify({'error': 'Book already exists'}), 409
+                return render_template('add_book.html',
+                                       message='Book already exists')
             new_book = Book(
                 title=title,
                 isbn=isbn,
@@ -206,6 +208,11 @@ def confirm_author_deletion(author_id):
         db.session.rollback()
         message = f'Unexpected error: {error}'
     return redirect(url_for('home', message=message))
+
+
+@app.errorhandler(404)
+def not_found(error):
+    return render_template('404.html', error=error), 404
 
 
 if __name__ == '__main__':
