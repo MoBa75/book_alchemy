@@ -1,18 +1,18 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
-from data_models import db, Author, Book
-from datetime import datetime
-from sqlalchemy import or_, func
-from sqlalchemy.orm import joinedload
-import os
-from db_validation import validate_database
 from services.get_bookcover import get_cover_by_isbn
+from db_validation import validate_database
 from sqlalchemy.exc import SQLAlchemyError
-
+from data_models import db, Author, Book
+from sqlalchemy.orm import joinedload
+from sqlalchemy import or_, func
+from datetime import datetime
+import os
 
 app = Flask(__name__)
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'data', 'library.sqlite')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'data',
+                                                                    'library.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -21,6 +21,11 @@ validate_database(app)
 
 
 def add_element(element):
+    """
+
+    :param element:
+    :return:
+    """
     try:
         db.session.add(element)
         db.session.commit()
@@ -35,6 +40,11 @@ def add_element(element):
 
 @app.route('/')
 def home():
+    """
+    Shows all books from the table. Gives the possibility to sort the books by
+    title or author and furthermore the possibility to search by book title or
+    by the name of an author.
+    """
     sort_by = request.args.get('sort_by', 'title')
     search = request.args.get('search', '').strip()
     message = request.args.get('message')
@@ -59,6 +69,7 @@ def home():
 
 @app.route('/add_author', methods=['GET', 'POST'])
 def add_author():
+    """Adds a new author and prevents duplicate entries."""
     message = ""
     if request.method == 'POST':
         name = request.form.get('name')
@@ -85,20 +96,20 @@ def add_author():
 
         try:
             check_author = Author.query.filter(
-                            func.lower(Author.name) == name.strip().lower()).first()
+                func.lower(Author.name) == name.strip().lower()).first()
             if check_author:
                 return render_template('add_author.html',
                                        message='Author already exists')
             new_author = Author(
-                    name=name,
-                    birth_date=birthdate,
-                    date_of_death=death_date)
+                name=name,
+                birth_date=birthdate,
+                date_of_death=death_date)
             message = add_element(new_author)
             if not message:
                 message = f"Author '{name}' was successfully added."
         except ValueError:
             return jsonify({"error": "Invalid data type provided. "
-                                    "Please check birthdate and date of death."}), 400
+                                     "Please check birthdate and date of death."}), 400
         except SQLAlchemyError as error:
             return jsonify({'error': f'Database query failed: {error}'})
     return render_template("add_author.html", message=message)
@@ -106,6 +117,7 @@ def add_author():
 
 @app.route('/add_book', methods=['GET', 'POST'])
 def add_book():
+    """Adds a new book and prevents duplicate entries."""
     message = ""
 
     if request.method == 'POST':
@@ -138,7 +150,7 @@ def add_book():
                 message = f"Book '{title}' was successfully added."
         except ValueError:
             return jsonify({"error": "Invalid data type provided. "
-                                    "Please check the year and author ID."}), 400
+                                     "Please check the year and author ID."}), 400
         except SQLAlchemyError as error:
             return jsonify({'error': f'Database query failed: {error}'})
 
@@ -148,6 +160,7 @@ def add_book():
 
 @app.route('/book/<int:book_id>/delete', methods=['POST'])
 def delete_book(book_id):
+    """Deletes the selected book."""
     try:
         book = Book.query.options(joinedload(Book.author)).get_or_404(book_id)
         author = book.author
@@ -174,6 +187,7 @@ def delete_book(book_id):
 
 @app.route('/author/<int:author_id>/delete', methods=['POST'])
 def delete_author(author_id):
+    """Deletes an author if there are no more books by the author."""
     try:
         author = Author.query.get_or_404(author_id)
 
@@ -195,6 +209,7 @@ def delete_author(author_id):
 
 @app.route('/author/<int:author_id>/confirm_delete')
 def confirm_author_deletion(author_id):
+    """Asks the user whether the author should also be deleted."""
     try:
         author = Author.query.get_or_404(author_id)
         message = request.args.get("message")
@@ -212,6 +227,7 @@ def confirm_author_deletion(author_id):
 
 @app.errorhandler(404)
 def not_found(error):
+    """Error handling of error 404."""
     return render_template('404.html', error=error), 404
 
 

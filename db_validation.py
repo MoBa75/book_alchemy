@@ -7,17 +7,23 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 DB_DIR = os.path.join(DATA_DIR, 'library.sqlite')
 
+
 def validate_database(app):
+    """
+    Validates the database by checking the file path and the file itself.
+    Exits the program and links to the setup file if file path or
+    database missing / corrupt.
+    """
     if not os.path.isfile(DB_DIR):
         print('Database not found. Please run db_creation.py to create the database.')
         sys.exit(1)
     with app.app_context():
         inspector = inspect(db.engine)
         expected_tables = {
-                            'authors': {'id', 'name', 'birth_date', 'date_of_death'},
-                            'books': {'id', 'isbn', 'title', 'publication_year',
-                                      'book_cover_url', 'author_id'}
-                            }
+            'authors': {'id', 'name', 'birth_date', 'date_of_death'},
+            'books': {'id', 'isbn', 'title', 'publication_year',
+                      'book_cover_url', 'author_id'}
+        }
         actual_tables = set(inspector.get_table_names())
         missing_tables = set(expected_tables.keys()) - actual_tables
         if missing_tables:

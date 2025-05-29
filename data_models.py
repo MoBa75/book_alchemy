@@ -1,10 +1,21 @@
 from flask_sqlalchemy import SQLAlchemy
 
-
 db = SQLAlchemy()
 
 
 class Author(db.Model):
+    """
+    Represents an author of one or more books.
+
+    Attributes:
+        id (integer): primary key, auto-incrementing unique identifier
+        name (string): full name of the author (must be unique)
+        birth_date (date): birthdate of the author
+        date_of_death (date, optional): the author's date of death
+
+        books (Book): one-to-many relationship containing
+                      the books the author wrote
+    """
     __tablename__ = 'authors'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -25,6 +36,17 @@ class Author(db.Model):
 
 
 class Book(db.Model):
+    """
+    Represents a books.
+    Attributes:
+        id (integer): primary key, auto-incrementing unique identifier
+        isbn (string): ISBN-number of the book
+        title (sting): title of the book
+        publication_year (integer): year of the book's first publication
+        book_cover_url (string): url to the matching book cover
+        author_id (integer): foreignkey, link to author ID in the author table
+    """
+
     __tablename__ = 'books'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
