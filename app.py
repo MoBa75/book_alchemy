@@ -22,9 +22,11 @@ validate_database(app)
 
 def add_element(element):
     """
-
-    :param element:
-    :return:
+    Adds and commits a file to the database, handles
+    errors and rollbacks session in case of error.
+    :param element: the element to save in the database,
+                    Book or Author class instance
+    :return: empty string if successful, else an error message
     """
     try:
         db.session.add(element)
@@ -69,7 +71,7 @@ def home():
 
 @app.route('/add_author', methods=['GET', 'POST'])
 def add_author():
-    """Adds a new author and prevents duplicate entries."""
+    """Adds a new author, handles errors and prevents duplicate entries."""
     message = ""
     if request.method == 'POST':
         name = request.form.get('name')
@@ -117,7 +119,7 @@ def add_author():
 
 @app.route('/add_book', methods=['GET', 'POST'])
 def add_book():
-    """Adds a new book and prevents duplicate entries."""
+    """Adds a new book, handles errors and prevents duplicate entries."""
     message = ""
 
     if request.method == 'POST':

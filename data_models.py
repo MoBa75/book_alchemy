@@ -26,9 +26,12 @@ class Author(db.Model):
     books = db.relationship('Book', backref='author', lazy=True)
 
     def __repr__(self):
+        """Returns a concise, unambiguous representation
+        of the Author instance for debugging"""
         return f"<Author(id={self.id}, name='{self.name}')>"
 
     def __str__(self):
+        """Returns a human-readable string representation of the Author instance."""
         birth = self.birth_date.year
         death = self.date_of_death.year if self.date_of_death else ""
         lifespan = f"{birth}–{death}" if death else f"{birth}"
@@ -43,7 +46,7 @@ class Book(db.Model):
         isbn (string): ISBN-number of the book
         title (sting): title of the book
         publication_year (integer): year of the book's first publication
-        book_cover_url (string): url to the matching book cover
+        book_cover_url (string): url to the matching book cover or fallback cover
         author_id (integer): foreignkey, link to author ID in the author table
     """
 
@@ -57,7 +60,10 @@ class Book(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey('authors.id'), nullable=False)
 
     def __repr__(self):
+        """Returns a concise, unambiguous representation
+        of the Book instance for debugging"""
         return f"<Book(id={self.id}, title='{self.title}', author_id={self.author_id})>"
 
     def __str__(self):
+        """Returns a human-readable string representation of the Book instance."""
         return f"{self.title} ({self.publication_year}) by {self.author.name}"
