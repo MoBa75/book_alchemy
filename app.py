@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from data_models import db, Author, Book
 from datetime import datetime
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from sqlalchemy.orm import joinedload
 import os
 from db_validation import validate_database
@@ -84,6 +84,10 @@ def add_author():
             death_date = None
 
         try:
+            check_author = Author.query.filter(
+                            func.lower(Author.name) == name.strip().lower()).first()
+            if check_author:
+                return jsonify({'error': 'Author already exists'}), 409
             new_author = Author(
                     name=name,
                     birth_date=birthdate,
@@ -94,13 +98,14 @@ def add_author():
         except ValueError:
             return jsonify({"error": "Invalid data type provided. "
                                     "Please check birthdate and date of death."}), 400
+        except SQLAlchemyError as error:
+            return jsonify({'error': f'Database query failed: {error}'})
     return render_template("add_author.html", message=message)
 
 
 @app.route('/add_book', methods=['GET', 'POST'])
 def add_book():
     message = ""
-    authors = Author.query.all()
 
     if request.method == 'POST':
         title = request.form.get('title')
@@ -112,22 +117,30 @@ def add_book():
                           in ['title', 'isbn', 'publication_year', 'author_id']
                           if not locals()[variable]]
         if missing_fields:
-            jsonify({'error': f'Fields missing: {", ".join(missing_fields)}'}), 400
+            return jsonify({'error': f'Fields missing: {", ".join(missing_fields)}'}), 400
 
         try:
+            author_id = int(author_id)
+            check_book = Book.query.filter(func.lower(Book.title) == title.strip().lower(),
+                                           Book.author_id == author_id).first()
+            if check_book:
+                return jsonify({'error': 'Book already exists'}), 409
             new_book = Book(
                 title=title,
                 isbn=isbn,
                 publication_year=int(publication_year),
                 book_cover_url=get_cover_by_isbn(isbn),
-                author_id=int(author_id))
+                author_id=author_id)
             message = add_element(new_book)
             if not message:
                 message = f"Book '{title}' was successfully added."
         except ValueError:
             return jsonify({"error": "Invalid data type provided. "
                                     "Please check the year and author ID."}), 400
+        except SQLAlchemyError as error:
+            return jsonify({'error': f'Database query failed: {error}'})
 
+    authors = Author.query.all()
     return render_template("add_book.html", authors=authors, message=message)
 
 

@@ -3,13 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <title>Confirm Author Deletion</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
 </head>
 <body>
-  <h2>Delete Author?</h2>
-  <p>The author <strong>{{ author.name }}</strong> has no more books in the library.</p>
-  <form action="{{ url_for('delete_author', author_id=author.id) }}" method="POST">
-    <button type="submit">Yes, delete author</button>
-    <a href="{{ url_for('home') }}">Cancel</a>
-  </form>
+  <div class="form-container">
+    <h1>Delete Author?</h1>
+    <p>The author <strong>{{ author.name }}</strong> has no more books in the library.</p>
+
+    <form action="{{ url_for('delete_author', author_id=author.id) }}" method="POST">
+      <button type="submit">Yes, delete author</button>
+      <a href="{{ url_for('home') }}" class="back-button">← Cancel</a>
+    </form>
+  </div>
 </body>
 </html>
