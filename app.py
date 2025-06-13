@@ -132,7 +132,8 @@ def add_book():
                           in ['title', 'isbn', 'publication_year', 'author_id']
                           if not locals()[variable]]
         if missing_fields:
-            return jsonify({'error': f'Fields missing: {", ".join(missing_fields)}'}), 400
+            return jsonify({'error': 'Sorry, something went wrong while processing your request. '
+                                     'Please try again in a few moments.'}), 400
 
         try:
             author_id = int(author_id)
@@ -234,4 +235,4 @@ def not_found(error):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port=5002, debug=True)
