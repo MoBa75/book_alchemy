@@ -37,7 +37,7 @@ def add_element(element):
         return f"Database error: {str(error)}"
     except Exception as error:
         db.session.rollback()
-        return f"An unexpected error occurred: {str(error)}"
+        return "An unexpected error occurred. Please try later."
 
 
 @app.route('/')
@@ -113,7 +113,8 @@ def add_author():
             return jsonify({"error": "Invalid data type provided. "
                                      "Please check birthdate and date of death."}), 400
         except SQLAlchemyError as error:
-            return jsonify({'error': f'Database query failed: {error}'})
+            return jsonify({'error': 'Sorry, something went wrong while processing your request. '
+                                     'Please try again in a few moments.'})
     return render_template("add_author.html", message=message)
 
 
@@ -155,7 +156,8 @@ def add_book():
             return jsonify({"error": "Invalid data type provided. "
                                      "Please check the year and author ID."}), 400
         except SQLAlchemyError as error:
-            return jsonify({'error': f'Database query failed: {error}'})
+            return jsonify({'error': 'Sorry, something went wrong while processing your request. '
+                                     'Please try again in a few moments.'})
 
     authors = Author.query.all()
     return render_template("add_book.html", authors=authors, message=message)
@@ -202,7 +204,8 @@ def delete_author(author_id):
             message = "Author not deleted"
     except SQLAlchemyError as error:
         db.session.rollback()
-        message = f'Database error: {error}'
+        message = ('Sorry, something went wrong while processing your request. '
+                   'Please try again in a few moments.')
 
     except Exception as error:
         db.session.rollback()
